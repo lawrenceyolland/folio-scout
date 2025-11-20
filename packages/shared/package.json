@@ -1,0 +1,7 @@
+{
+  "name": "@folioscout/shared",
+  "version": "0.1.0",
+  "main": "src/main.ts",
+  "types": "src/index.ts",
+  "license": "MIT"
+}

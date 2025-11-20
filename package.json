@@ -1,0 +1,22 @@
+{
+  "name": "folio-scout",
+  "version": "1.0.0",
+  "description": "Analyse your dev portfolio and improve your hireability!",
+  "main": "index.js",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lawrenceyolland/folio-scout.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/lawrenceyolland/folio-scout/issues"
+  },
+  "homepage": "https://github.com/lawrenceyolland/folio-scout#readme"
+}
