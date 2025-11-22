@@ -81,7 +81,7 @@ class PackageJsonAnalyser {
     }
 
     checkScripts = (): Record<ScriptCheck, boolean | null> => {
-        const scriptFieldMap: Record<ScriptFields, ScriptCheck> = {
+        const scriptFieldMap : Record<ScriptFields, ScriptCheck> = {
             start: "hasScriptStart",
             dev: "hasScriptDev",
             build: "hasScriptBuild",

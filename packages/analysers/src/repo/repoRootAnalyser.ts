@@ -11,6 +11,18 @@
 import * as fs from "node:fs";
 const BASE_PATH = '/tmp/folio-scout'
 
+type RootFiles = "package.json" |
+    "README.md" |
+    "src" |
+    ".gitignore" |
+    "node_modules" |
+    "webpack" |
+    "tsconfig" |
+    "vite" |
+    "package-lock.json" |
+    "yarn.lock"
+
+
 type CheckMethods =
     "hasPackageJson" |
     "hasReadMe" |
@@ -31,84 +43,35 @@ class RepoRootAnalyser {
         this.files = fs.readdirSync(jobPath);
     }
 
-    hasPackageJson = (): boolean => {
-        return this.files.includes("package.json");
+    hasFile = (file: string): boolean => {
+        return this.files.includes(file);
     }
 
-    hasReadMe = (): boolean => {
-        return this.files.includes("README.md");
-    }
+    runRepoChecks = (): Record<CheckMethods, boolean> => {
 
-    hasRootSrc = (): boolean => {
-        return this.files.includes("src");
-    }
-
-    hasGitIgnore = (): boolean => {
-        return this.files.includes(".gitignore");
-    }
-
-    hasNodeModules = (): boolean => {
-        return this.files.includes("node_modules");
-    }
-
-    hasWebPack = (): boolean => {
-        return this.files.includes("webpack");
-    }
-
-    hasTypeScript = (): boolean => {
-        return this.files.includes("tsconfig");
-    }
-
-    hasVite = (): boolean => {
-        return this.files.includes("vite");
-    }
-    hasNpm = (): boolean => {
-        return this.files.includes("package-lock.json")
-    }
-
-    hasYarn = (): boolean => {
-        return this.files.includes("yarn.lock");
-    }
-
-    hasYarnAndNpm = (): boolean => {
-        return this.hasYarn() && this.hasNpm()
-    }
-
-
-    runRepoChecks = () => {
-        const methods : CheckMethods[] = [
-            "hasPackageJson",
-            "hasReadMe",
-            "hasRootSrc",
-            "hasGitIgnore",
-            "hasNodeModules",
-            "hasWebPack",
-            "hasYarn",
-            "hasNpm",
-            "hasYarnAndNpm",
-            "hasTypeScript",
-            "hasVite"
-        ]
-
-        const result: Record<CheckMethods, boolean | null> = {
-            hasPackageJson: null,
-            hasReadMe: null,
-            hasRootSrc: null,
-            hasGitIgnore: null,
-            hasNodeModules: null,
-            hasWebPack: null,
-            hasTypeScript: null,
-            hasVite: null,
-            hasNpm: null,
-            hasYarn: null,
-            hasYarnAndNpm: null,
-        };
-
-        for (const method  of methods) {
-            result[method] = this[method]();
+        const rootFilesMap : Record<RootFiles, CheckMethods> = {
+            "package.json": "hasPackageJson",
+            "README.md": "hasReadMe",
+            src: "hasRootSrc",
+            ".gitignore": "hasGitIgnore",
+            node_modules: "hasNodeModules",
+            webpack: "hasWebPack",
+            "yarn.lock": "hasYarn",
+            "package-lock.json": "hasNpm",
+            tsconfig: "hasTypeScript",
+            vite: "hasVite"
         }
 
-        return result
+        const rootFilesResult = {} as Record<CheckMethods, boolean>
+        const rootFileFields = Object.keys(rootFilesMap) as RootFiles[];
+        for (const file of rootFileFields) {
+            const fieldName: CheckMethods = rootFilesMap[file];
+            rootFilesResult[fieldName] = this.hasFile(file);
+        }
+
+        rootFilesResult.hasYarnAndNpm = rootFilesResult.hasYarn && rootFilesResult.hasNpm
+
+        return rootFilesResult
     }
 }
 
