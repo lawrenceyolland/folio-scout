@@ -3,7 +3,11 @@ import { HTTPException } from 'hono/http-exception'
 import { requestId } from 'hono/request-id'
 import * as fs from "node:fs";
 import { simpleGit } from 'simple-git';
-import EasyRepoChecks from "../../../../packages/analysers/src/repo/easyChecks.js";
+import EasyRepoChecks from "../../../../packages/analysers/src/repo/repoRootAnalyser.js";
+import RepoRootAnalyser from "../../../../packages/analysers/src/repo/repoRootAnalyser.js";
+import PackageJsonAnalyser from "../../../../packages/analysers/src/repo/packageJsonAnalyser.js";
+import packageJsonAnalyser from "../../../../packages/analysers/src/repo/packageJsonAnalyser.js";
+import RepoMetrics from "../../../../packages/analysers/src/repo/repoMetrics.js";
 
 const router = new Hono();
 
@@ -19,29 +23,37 @@ router.post("", async (c) => {
     const jobId = `job_${c.get("requestId")}`
     let files = []
     try {
-        const jobPath = `${BASE_PATH}/job/${jobId}`
+        const jobPath = `${BASE_PATH}/jobs/${jobId}`
 
         if (!fs.existsSync(jobPath)) {
             fs.mkdirSync(jobPath, {recursive: true})
         }
-
+        // TODO: if no repo supplied reject request
+        // clone repo into jobs/{job_id}
         await simpleGit().clone(body.repoUrl, jobPath)
 
-        const easyRepoChecks = new EasyRepoChecks(jobPath);
+        // 1. easy root level checks
+        const easyRepoChecks = new RepoRootAnalyser(jobPath);
+        const easyChecksResult = easyRepoChecks.runRepoChecks()
 
-        const easyChecksResult = {
-            hasPackageJson: easyRepoChecks.hasPackageJson(),
-            hasRootSrc: easyRepoChecks.hasRootSrc(),
-            hasReadMe: easyRepoChecks.hasReadMe(),
-            hasGitIgnore: easyRepoChecks.hasGitIgnore()
-        }
+        // 2. package.json analysis
+        const packageJsonChecks = new PackageJsonAnalyser(jobPath);
+        const packageJsonResult = packageJsonChecks.runPackageJsonChecks() || {}
+
+        // 4. repo metrics (counts, sizes, depth)
+        const repoMetrics = await RepoMetrics.create(jobPath);
+        const filesInRepo = repoMetrics.getFileTypes();
+        // console.log(fileTypes)
+        // 4. deeper file discovery (nested)
 
         fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(easyChecksResult))
 
         return c.json({
             success: true,
             data: {
-                easyChecksResult
+                easyChecksResult,
+                packageJsonResult,
+                files: filesInRepo,
             }
         })
 
