@@ -43,11 +43,11 @@ class PackageJsonAnalyser {
     private pkg: PackageJson | null = null;
 
     constructor(private jobPath: string) {
-        this.load()
+        this.load();
     }
 
     load = (): any | null => {
-        const pkgPath = `${this.jobPath}/package.json`
+        const pkgPath = `${this.jobPath}/package.json`;
 
         if (!fs.existsSync(pkgPath)) {
             this.pkg = null;
@@ -55,12 +55,12 @@ class PackageJsonAnalyser {
         }
 
         try {const rawFile = fs.readFileSync(pkgPath, "utf8")
-          this.pkg = JSON.parse(rawFile) as PackageJson
+          this.pkg = JSON.parse(rawFile) as PackageJson;
 
         } catch (e) {
             this.pkg = null;
-            console.error('failed to read package json')
-            throw new HTTPException(404)
+            console.error('failed to read package json');
+            throw new HTTPException(404);
         }
     }
 
@@ -69,7 +69,7 @@ class PackageJsonAnalyser {
     }
 
     hasScript = (field: ScriptFields): boolean => {
-        return !!this.pkg?.scripts && Object.hasOwn(this.pkg?.scripts, field)
+        return !!this.pkg?.scripts && Object.hasOwn(this.pkg?.scripts, field);
     }
 
     checkDependencies= (): Record<DependencyCheck, boolean | null> => {
@@ -77,7 +77,7 @@ class PackageJsonAnalyser {
             hasDependencies: this.hasField("dependencies"),
             hasDevDependencies: this.hasField("devDependencies"),
             hasPeerDependencies: this.hasField("peerDependencies"),
-        } as (Record<DependencyCheck, boolean | null>)
+        } as (Record<DependencyCheck, boolean | null>);
     }
 
     checkScripts = (): Record<ScriptCheck, boolean | null> => {
@@ -85,7 +85,7 @@ class PackageJsonAnalyser {
             start: "hasScriptStart",
             dev: "hasScriptDev",
             build: "hasScriptBuild",
-            test: "hasScriptTest"
+            test: "hasScriptTest",
         };
 
         const scriptFields = Object.keys(scriptFieldMap) as ScriptFields[];
@@ -99,7 +99,7 @@ class PackageJsonAnalyser {
             }
         }
 
-        return scriptsResult
+        return scriptsResult;
     }
 
     checkMeta = (): Record<MetaCheck, boolean | null> => {
@@ -111,12 +111,12 @@ class PackageJsonAnalyser {
             hasLicense: this.hasField("license"),
             hasType: hasType,
             hasTypeModule: hasType ? this.pkg?.type === 'module' : null
-        } as (Record<MetaCheck, boolean | null>)
+        } as (Record<MetaCheck, boolean | null>);
     }
 
     runPackageJsonChecks = () => {
         if (!this.pkg) {
-            return null
+            return null;
         }
         const dependencyResult = this.checkDependencies();
         const scriptsResult = this.checkScripts();

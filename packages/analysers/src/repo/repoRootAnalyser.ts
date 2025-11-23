@@ -59,11 +59,12 @@ class RepoRootAnalyser {
             "yarn.lock": "hasYarn",
             "package-lock.json": "hasNpm",
             tsconfig: "hasTypeScript",
-            vite: "hasVite"
+            vite: "hasVite",
         }
 
         const rootFilesResult = {} as Record<CheckMethods, boolean>
         const rootFileFields = Object.keys(rootFilesMap) as RootFiles[];
+
         for (const file of rootFileFields) {
             const fieldName: CheckMethods = rootFilesMap[file];
             rootFilesResult[fieldName] = this.hasFile(file);
