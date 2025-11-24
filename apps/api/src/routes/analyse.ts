@@ -13,7 +13,9 @@ const router = new Hono();
 
 const BASE_PATH = '/tmp/folio-scout'
 
-const TESTING_FILE_PATH = 'job_ab8de250-23f1-4238-82e3-f2f480c371d9'
+// TODO: use new repo job here
+const TESTING_FILE_PATH = ""
+    // 'job_ab8de250-23f1-4238-82e3-f2f480c371d9'
 
 router.post("", async (c) => {
     const body = await c.req.json()
@@ -22,7 +24,7 @@ router.post("", async (c) => {
       throw new HTTPException(500)
     }
 
-    const jobId = TESTING_FILE_PATH ||  `job_${c.get("requestId")}`
+    const jobId = TESTING_FILE_PATH || `job_${c.get("requestId")}`
     let files = []
     try {
         const jobPath = `${BASE_PATH}/jobs/${jobId}`
@@ -33,12 +35,13 @@ router.post("", async (c) => {
 
         // TODO: if no repo supplied reject request
         // clone repo into jobs/{job_id}
-        // await simpleGit().clone(body.repoUrl, jobPath)
+        await simpleGit().clone(body.repoUrl, jobPath)
 
         // 1. easy root level checks
         const easyRepoChecks = new RepoRootAnalyser(jobPath);
         const easyChecksResult = easyRepoChecks.runRepoChecks() || {};
 
+        // TODO
         // 2. package.json analysis
         const packageJsonChecks = new PackageJsonAnalyser(jobPath);
         const packageJsonResult = packageJsonChecks.runPackageJsonChecks() || {};
@@ -51,16 +54,24 @@ router.post("", async (c) => {
         const maxDepth = repoMetrics.getMaxDepth();
         const linesPerCodeFile = await repoMetrics.getLinesPerCodeFile()
         const linePerFileType = RepoMetrics.getLinesPerFileType(linesPerCodeFile || {});
-        const avgPerFileType = RepoMetrics.getAvgPerFileType(linesPerCodeFile || {}, filesInRepo || {})
+        const avgPerFileType = RepoMetrics.getAvgLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
+        const medianPerFileType = RepoMetrics.getMedianLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
+
+        const srcStructure = repoMetrics.checkStructure()
+
+
+
         // 4. deeper file discovery (nested)
 
-        !TESTING_FILE_PATH && fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(easyChecksResult));
+        // !TESTING_FILE_PATH &&
+        fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(easyChecksResult));
 
         return c.json({
             success: true,
             data: {
                 easyChecksResult,
                 packageJsonResult,
+                srcStructure,
                 files: {
                     maxDepth: maxDepth,
                     numFiles: numFiles,
@@ -69,6 +80,7 @@ router.post("", async (c) => {
                     codeLines: linesPerCodeFile,
                     typeLines: linePerFileType,
                     avgPerFileType,
+                    medianPerFileType
                 },
             }
         })
