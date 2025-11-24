@@ -1,5 +1,6 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
+import * as fs from "node:fs";
 
 class RepoMetrics {
     private files: string[] | null = [];
@@ -18,6 +19,28 @@ class RepoMetrics {
         ".js",
         ".jsx"
     ])
+    private srcDirs = [
+        "components",
+        "hooks",
+        "utils",
+        "helpers",
+        "services",
+        "api",
+        "context",
+        "store",
+        "styles",
+        "assets",
+        "pages",
+        "routes",
+        "constants",
+        "config",
+        "lib",
+        "tests",
+        "__tests__",
+        "public",
+        "types",
+    ]
+
     private maxDepth = 0
     private fileTypes: Record<string, number> | null = {};
 
@@ -30,8 +53,6 @@ class RepoMetrics {
 
         return analyzer;
     }
-
-
 
     readFiles = async (dir: string, depth: number, filelist: string[] = [], base: string = dir) => {
         const entries= await fsp.readdir(dir);
@@ -91,7 +112,6 @@ class RepoMetrics {
         return this.maxDepth;
     }
 
-
     getNumCodeFiles = (): number => {
         if (!this.fileTypes) {
             return 0
@@ -121,8 +141,9 @@ class RepoMetrics {
         for (const file of this.files) {
             const filePath = `${this.jobPath}/${file}`
             const parsedFile = path.parse(filePath)
+
             if (this.codeFileTypes.has(parsedFile.ext)) {
-                linesPerCodeFile[filePath] = 0;
+                linesPerCodeFile[file] = 0;
                 const content = await fsp.readFile(filePath, "utf8");
 
                 let lines = 0;
@@ -136,7 +157,7 @@ class RepoMetrics {
                     lines = 1;
                 }
 
-                linesPerCodeFile[filePath] = lines;
+                linesPerCodeFile[file] = lines;
             }
         }
 
@@ -154,20 +175,8 @@ class RepoMetrics {
         return linesPerFileType;
     }
 
-    static getAvgPerFileType = (codeFileLines: Record<string, number>, filesInRepo: Record<string, number>): Record<string, number> => {
-        const avgPerFileType: Record<string, number> = {}
-
-        for (const [filePath, count] of Object.entries(codeFileLines)) {
-            const parsedFile = path.parse(filePath);
-            avgPerFileType[parsedFile.ext] = count / filesInRepo[parsedFile.ext]
-        }
-
-        return avgPerFileType;
-    }
-
-    static getMedianPerFileType = (codeFileLines: Record<string, number>, filesInRepo: Record<string, number>): Record<string, number> => {
+    static reshapeFileTypeCounts = (codeFileLines: Record<string, number>):Record<string, number[]> => {
         const reshapedFileTypeCounts : Record<string, number[]> = {}
-
 
         for (const [filePath, count] of Object.entries(codeFileLines)) {
             const parsedFile = path.parse(filePath);
@@ -177,24 +186,86 @@ class RepoMetrics {
             reshapedFileTypeCounts[parsedFile.ext].push(count);
         }
 
+        return reshapedFileTypeCounts
+    }
+
+    static getAvgLinesPerFileType = (codeFileLines: Record<string, number>, filesInRepo: Record<string, number>): Record<string, number> => {
+
+        const reshapedFileTypeCounts : Record<string, number[]> = this.reshapeFileTypeCounts(codeFileLines)
+
+        const avgPerFileType: Record<string, number> = {}
+
+        for (const [ext, count] of Object.entries(reshapedFileTypeCounts)) {
+            const countsLength = count.length
+            const lineSum = count.reduce((acc, curr) => acc += curr, 0)
+
+            avgPerFileType[ext] = Math.floor(lineSum / countsLength);
+        }
+
+        return avgPerFileType;
+    }
+
+    static getMedianLinesPerFileType = (codeFileLines: Record<string, number>, filesInRepo: Record<string, number>): Record<string, number> => {
+        const reshapedFileTypeCounts : Record<string, number[]> = this.reshapeFileTypeCounts(codeFileLines)
         const medianPerFileType: Record<string, number> = {}
 
         for (const [ext, count] of Object.entries(reshapedFileTypeCounts)) {
-            const sortedCounts = count.sort((a,b) => a-b);
+            const sortedCounts = count.sort((a, b) => a-b);
 
-            // const mid = ....
+            const countsLength = sortedCounts.length
+            const mid = Math.floor(countsLength / 2)
 
-            if (sortedCounts.length % 2 === 0) {
-            // TODO: finish this method
-            //
+            if (countsLength === 2) {
+                medianPerFileType[ext] = Math.floor((count[0] + count[1]) / 2);
+            } else if (countsLength % 2 === 0) {
+                medianPerFileType[ext] = sortedCounts[mid + 1];
             } else {
-            // ...
+                medianPerFileType[ext] = sortedCounts[mid];
             }
         }
-
         return medianPerFileType;
+    }
+
+     toHasKey = (dir: string) => {
+        if (dir === "__tests__") return "hasUnderscoreTests";
+
+        return (
+            "has" +
+            dir
+                .replace(/[^a-zA-Z0-9]/g, "")
+                .replace(/^\w/, (c) => c.toUpperCase())
+        );
+    };
+
+
+    checkStructure = (): Record<string, boolean> | null => {
+        if (!this.files) {
+            return null;
+        }
+
+        const src = fs.readdirSync(`${this.jobPath}/src`);
+        const srcLower = src.map((name) => name.toLowerCase());
+
+        const srcStructure: Record<string, boolean> = {}
+
+        for (const item of this.srcDirs) {
+            srcStructure[this.toHasKey(item)] = srcLower.includes(item)
+        }
+
+        return srcStructure;
     }
 }
 
+// "structure": {
+//     "hasComponents": true,
+//         "hasPages": false,
+//         "hasUtils": true,
+//         "hasHooks": false,
+//         "maxDirectoryDepth": 5,
+//         "largestDirectory": {
+//         "path": "src/components",
+//             "fileCount": 28
+//     }
+// }
 
 export default RepoMetrics;

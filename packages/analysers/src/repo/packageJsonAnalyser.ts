@@ -54,9 +54,9 @@ class PackageJsonAnalyser {
             return null
         }
 
-        try {const rawFile = fs.readFileSync(pkgPath, "utf8")
-          this.pkg = JSON.parse(rawFile) as PackageJson;
-
+        try {
+            const rawFile = fs.readFileSync(pkgPath, "utf8")
+            this.pkg = JSON.parse(rawFile) as PackageJson;
         } catch (e) {
             this.pkg = null;
             console.error('failed to read package json');
