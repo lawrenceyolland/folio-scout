@@ -27,7 +27,8 @@ type CheckMethods =
     "hasYarnAndNpm" |
     "hasEsLint" |
     "hasPrettier" |
-    "hasAstro"
+    "hasAstro" |
+    "hasNext"
 
 class RepoRootAnalyser {
     private files: string[];
@@ -69,6 +70,7 @@ class RepoRootAnalyser {
             hasPrettier: this.hasConfigFile(".prettierrc"),
             hasTypeScript: this.hasConfigFile("tsconfig"),
             hasAstro: this.hasConfigFile('astro'),
+            hasNext: this.hasConfigFile("next.config"),
             hasYarn: this.hasFile("yarn.lock"),
             hasNpm: this.hasFile("package-lock.json"),
             hasYarnAndNpm: this.hasFile("yarn.lock") && this.hasFile("package-lock.json"),

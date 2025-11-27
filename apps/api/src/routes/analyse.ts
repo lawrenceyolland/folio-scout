@@ -8,6 +8,7 @@ import RepoRootAnalyser from "../../../../packages/analysers/src/repo/repoRootAn
 import PackageJsonAnalyser from "../../../../packages/analysers/src/repo/packageJsonAnalyser.js";
 import packageJsonAnalyser from "../../../../packages/analysers/src/repo/packageJsonAnalyser.js";
 import RepoMetrics from "../../../../packages/analysers/src/repo/repoMetrics.js";
+import ProjectAnalysis from "../../../../packages/analysers/src/repo/projectAnalysis.js";
 
 const router = new Hono();
 
@@ -46,7 +47,7 @@ router.post("", async (c) => {
         const pkg = packageJsonChecks.getPackageJson();
         const packageJsonResult = packageJsonChecks.runPackageJsonChecks() || {};
 
-        // 4. repo metrics (counts, sizes, depth)
+        // 3. repo metrics (counts, sizes, depth)
         const repoMetrics = await RepoMetrics.init(jobPath, pkg);
         const filesInRepo = repoMetrics.getFileTypes() || {};
         const numFiles = repoMetrics.getNumTotalFiles()
@@ -57,9 +58,10 @@ router.post("", async (c) => {
         const avgPerFileType = RepoMetrics.getAvgLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
         const medianPerFileType = RepoMetrics.getMedianLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
         const srcStructure = repoMetrics.checkStructure()
-       const frameworkSignals = repoMetrics.hasFramework()
-        const estimatedFramework = Object.entries(frameworkSignals ?? {}).sort(
-            ([, v1],[,v2]) => v2-v1)[0][0]
+
+        const projectAnalysis = new ProjectAnalysis()
+        const frameworkSignals = projectAnalysis.hasFramework(pkg)
+        const estimatedFramework = projectAnalysis.estimatedFramework(frameworkSignals);
 
         // 4. deeper file discovery (nested)
 
@@ -80,8 +82,10 @@ router.post("", async (c) => {
                     typeLines: linePerFileType,
                     avgPerFileType,
                     medianPerFileType,
-                    frameworkSignals,
-                    estimatedFramework,
+                    frameworks: {
+                        signals: frameworkSignals,
+                        estimatedFramework,
+                    }
                 },
             }
         })

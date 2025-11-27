@@ -3,7 +3,8 @@ import path from "node:path";
 import * as fs from "node:fs";
 import {PackageJson} from "./packageJsonAnalyser";
 
-type Frameworks = 'react' | 'vue' | 'angular' | 'next' | 'nuxt' | 'astro' | "analog"
+type Frameworks = 'react' | 'vue' | 'angular' | 'astro' | "solid" | "svelte";
+type MetaFrameworks = 'next' | 'nuxt' | "analog" | "svelteKit";
 
 class RepoMetrics {
     private files: string[] | null = [];
@@ -257,77 +258,6 @@ class RepoMetrics {
 
         return srcStructure;
     }
-
-    private isFramework = (signals: Record<Frameworks, string[]>,framework: Frameworks, depKey: string) => {
-       return signals[framework].some((rs) => depKey.startsWith(rs)) || depKey.includes(framework)
-    }
-
-    hasFramework = () => {
-        // check package.json, check root, check cdn
-        if (!this.pkg) {
-            return
-        }
-
-        const signals : Record<Frameworks, string[]>= {
-            react: ["@types/react", "@types/react-dom", "react", "react-dom",
-                "@vitejs/plugin-react", "eslint-plugin-react-hooks", "eslint-plugin-react-refresh"],
-            vue: ["vue", "@vue/", "eslint-plugin-vue", '@vitejs/plugin-vue'],
-            astro: ["astro", "eslint-plugin-astro"],
-            angular: ["angular"],
-            next: ["next", "eslint-config-next"],
-            nuxt: ["nuxt", "@nuxt/"],
-            analog: ['@analogjs/vite-plugin-angular']
-        }
-
-        const frameworkSignals : Record<Frameworks, number> = {
-            react: 0,
-            vue: 0,
-            astro: 0,
-            angular: 0,
-            next: 0,
-            nuxt: 0,
-            analog: 0,
-        }
-
-        for (const key of Object.keys(this.pkg ?? {})) {
-            if (key === 'dependencies' || key === 'devDependencies') {
-                for (const depKey of Object.keys(this.pkg?.[key] ?? {})) {
-                    if (this.isFramework(signals,'react', depKey)) {
-                        frameworkSignals.react++
-                    } else if (this.isFramework(signals,'vue', depKey)) {
-                        frameworkSignals.vue++
-                    } else if (this.isFramework(signals,'astro', depKey)) {
-                        frameworkSignals.astro++
-                    } else if (this.isFramework(signals,'angular', depKey)) {
-                        frameworkSignals.angular++
-                    } else if (this.isFramework(signals,"next", depKey)) {
-                        frameworkSignals.next++
-                    } else if (this.isFramework(signals,'nuxt', depKey)) {
-                        frameworkSignals.nuxt++
-                        frameworkSignals.vue++
-                    } else if (this.isFramework(signals,'analog', depKey)) {
-                        frameworkSignals.analog++
-                        frameworkSignals.angular++
-                    }
-                }
-            }
-        }
-
-        return frameworkSignals
-
-    }
 }
-
-// "structure": {
-//     "hasComponents": true,
-//         "hasPages": false,
-//         "hasUtils": true,
-//         "hasHooks": false,
-//         "maxDirectoryDepth": 5,
-//         "largestDirectory": {
-//         "path": "src/components",
-//             "fileCount": 28
-//     }
-// }
 
 export default RepoMetrics;
