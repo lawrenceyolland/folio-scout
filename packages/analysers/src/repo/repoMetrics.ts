@@ -3,7 +3,7 @@ import path from "node:path";
 import * as fs from "node:fs";
 import {PackageJson} from "./packageJsonAnalyser";
 
-type Frameworks = 'React' | 'Vue' | 'Angular' | 'Next' | 'Nuxt' | 'Nest' | 'Astro'
+type Frameworks = 'react' | 'vue' | 'angular' | 'next' | 'nuxt' | 'astro' | "analog"
 
 class RepoMetrics {
     private files: string[] | null = [];
@@ -258,40 +258,56 @@ class RepoMetrics {
         return srcStructure;
     }
 
+    private isFramework = (signals: Record<Frameworks, string[]>,framework: Frameworks, depKey: string) => {
+       return signals[framework].some((rs) => depKey.startsWith(rs)) || depKey.includes(framework)
+    }
+
     hasFramework = () => {
         // check package.json, check root, check cdn
         if (!this.pkg) {
             return
         }
-        //TODO: React
-        //     "@types/react": "^19.1.8",
-        //     "@types/react-dom": "^19.1.6",
-        //      "react": "^19.1.0",
-        //      "react-dom": "^19.1.0",
-        // "eslint-plugin-react-hooks": "^5.2.0",
-        //     "eslint-plugin-react-refresh": "^0.4.20",
-        const reactSignals = ["@types/react", "@types/react-dom", "react", "react-dom"]
-        //TODO: Vue
-        const vueSignals = ["vue", "@vue/"];
-        // TODO: Astro
-        const astroSignals = ["astro"]
+
+        const signals : Record<Frameworks, string[]>= {
+            react: ["@types/react", "@types/react-dom", "react", "react-dom",
+                "@vitejs/plugin-react", "eslint-plugin-react-hooks", "eslint-plugin-react-refresh"],
+            vue: ["vue", "@vue/", "eslint-plugin-vue", '@vitejs/plugin-vue'],
+            astro: ["astro", "eslint-plugin-astro"],
+            angular: ["angular"],
+            next: ["next", "eslint-config-next"],
+            nuxt: ["nuxt", "@nuxt/"],
+            analog: ['@analogjs/vite-plugin-angular']
+        }
+
         const frameworkSignals : Record<Frameworks, number> = {
-            React: 0,
-            Vue: 0,
-            Astro: 0,
-            Angular: 0,
-            Next: 0,
-            Nuxt: 0,
-            Nest: 0,
+            react: 0,
+            vue: 0,
+            astro: 0,
+            angular: 0,
+            next: 0,
+            nuxt: 0,
+            analog: 0,
         }
 
         for (const key of Object.keys(this.pkg ?? {})) {
             if (key === 'dependencies' || key === 'devDependencies') {
                 for (const depKey of Object.keys(this.pkg?.[key] ?? {})) {
-                    if (reactSignals.some((rs) => depKey.startsWith(rs)) || depKey.includes('react')) {
-                        frameworkSignals.React++
-                    } else if (vueSignals.some((vs) => depKey.startsWith(vs)) || depKey.includes('vue')) {
-                        frameworkSignals.Vue++
+                    if (this.isFramework(signals,'react', depKey)) {
+                        frameworkSignals.react++
+                    } else if (this.isFramework(signals,'vue', depKey)) {
+                        frameworkSignals.vue++
+                    } else if (this.isFramework(signals,'astro', depKey)) {
+                        frameworkSignals.astro++
+                    } else if (this.isFramework(signals,'angular', depKey)) {
+                        frameworkSignals.angular++
+                    } else if (this.isFramework(signals,"next", depKey)) {
+                        frameworkSignals.next++
+                    } else if (this.isFramework(signals,'nuxt', depKey)) {
+                        frameworkSignals.nuxt++
+                        frameworkSignals.vue++
+                    } else if (this.isFramework(signals,'analog', depKey)) {
+                        frameworkSignals.analog++
+                        frameworkSignals.angular++
                     }
                 }
             }
