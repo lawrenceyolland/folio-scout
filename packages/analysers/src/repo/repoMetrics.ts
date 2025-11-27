@@ -1,6 +1,9 @@
 import fsp from "node:fs/promises";
 import path from "node:path";
 import * as fs from "node:fs";
+import {PackageJson} from "./packageJsonAnalyser";
+
+type Frameworks = 'React' | 'Vue' | 'Angular' | 'Next' | 'Nuxt' | 'Nest' | 'Astro'
 
 class RepoMetrics {
     private files: string[] | null = [];
@@ -44,10 +47,10 @@ class RepoMetrics {
     private maxDepth = 0
     private fileTypes: Record<string, number> | null = {};
 
-    constructor(private jobPath: string) {}
+    constructor(private jobPath: string, private pkg: PackageJson) {}
 
-     static init = async (jobPath: string) => {
-        const analyzer = new RepoMetrics(jobPath);
+     static init = async (jobPath: string, pkg: PackageJson) => {
+        const analyzer = new RepoMetrics(jobPath, pkg);
         analyzer.files = await analyzer.readFiles(jobPath, 0);
         analyzer.fileTypes = analyzer.collectFileTypes();
 
@@ -253,6 +256,49 @@ class RepoMetrics {
         }
 
         return srcStructure;
+    }
+
+    hasFramework = () => {
+        // check package.json, check root, check cdn
+        if (!this.pkg) {
+            return
+        }
+        //TODO: React
+        //     "@types/react": "^19.1.8",
+        //     "@types/react-dom": "^19.1.6",
+        //      "react": "^19.1.0",
+        //      "react-dom": "^19.1.0",
+        // "eslint-plugin-react-hooks": "^5.2.0",
+        //     "eslint-plugin-react-refresh": "^0.4.20",
+        const reactSignals = ["@types/react", "@types/react-dom", "react", "react-dom"]
+        //TODO: Vue
+        const vueSignals = ["vue", "@vue/"];
+        // TODO: Astro
+        const astroSignals = ["astro"]
+        const frameworkSignals : Record<Frameworks, number> = {
+            React: 0,
+            Vue: 0,
+            Astro: 0,
+            Angular: 0,
+            Next: 0,
+            Nuxt: 0,
+            Nest: 0,
+        }
+
+        for (const key of Object.keys(this.pkg ?? {})) {
+            if (key === 'dependencies' || key === 'devDependencies') {
+                for (const depKey of Object.keys(this.pkg?.[key] ?? {})) {
+                    if (reactSignals.some((rs) => depKey.startsWith(rs)) || depKey.includes('react')) {
+                        frameworkSignals.React++
+                    } else if (vueSignals.some((vs) => depKey.startsWith(vs)) || depKey.includes('vue')) {
+                        frameworkSignals.Vue++
+                    }
+                }
+            }
+        }
+
+        return frameworkSignals
+
     }
 }
 

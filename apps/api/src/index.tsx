@@ -1,12 +1,13 @@
 import { Hono } from 'hono'
-import { renderer } from './renderer'
+// import { renderer } from './renderer'
 
 const app = new Hono()
 
-app.use(renderer)
+// TODO: for jsx
+// app.use(renderer)
 
 app.get('/', (c) => {
-  return c.render(<h1>Hello!</h1>)
+  return c.text("Hello!")
 })
 
 export default app

@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import { HTTPException } from "hono/http-exception";
 
-type PackageJson = {
+export type PackageJson = {
     name?: string;
     version?: string;
     license?: string;
@@ -62,6 +62,10 @@ class PackageJsonAnalyser {
             console.error('failed to read package json');
             throw new HTTPException(404);
         }
+    }
+
+    getPackageJson = () => {
+        return this.pkg;
     }
 
     hasField = (field: PackageJsonFields): boolean => {

@@ -14,8 +14,7 @@ const router = new Hono();
 const BASE_PATH = '/tmp/folio-scout'
 
 // TODO: use new repo job here
-const TESTING_FILE_PATH = ""
-    // 'job_ab8de250-23f1-4238-82e3-f2f480c371d9'
+const TESTING_FILE_PATH = 'job_f72303da-2df1-4674-84cc-6ed566745851'
 
 router.post("", async (c) => {
     const body = await c.req.json()
@@ -35,7 +34,7 @@ router.post("", async (c) => {
 
         // TODO: if no repo supplied reject request
         // clone repo into jobs/{job_id}
-        await simpleGit().clone(body.repoUrl, jobPath)
+        // await simpleGit().clone(body.repoUrl, jobPath)
 
         // 1. easy root level checks
         const easyRepoChecks = new RepoRootAnalyser(jobPath);
@@ -44,10 +43,11 @@ router.post("", async (c) => {
         // TODO
         // 2. package.json analysis
         const packageJsonChecks = new PackageJsonAnalyser(jobPath);
+        const pkg = packageJsonChecks.getPackageJson();
         const packageJsonResult = packageJsonChecks.runPackageJsonChecks() || {};
 
         // 4. repo metrics (counts, sizes, depth)
-        const repoMetrics = await RepoMetrics.init(jobPath);
+        const repoMetrics = await RepoMetrics.init(jobPath, pkg);
         const filesInRepo = repoMetrics.getFileTypes() || {};
         const numFiles = repoMetrics.getNumTotalFiles()
         const numCodeFiles = repoMetrics.getNumCodeFiles()
@@ -56,15 +56,14 @@ router.post("", async (c) => {
         const linePerFileType = RepoMetrics.getLinesPerFileType(linesPerCodeFile || {});
         const avgPerFileType = RepoMetrics.getAvgLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
         const medianPerFileType = RepoMetrics.getMedianLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
-
         const srcStructure = repoMetrics.checkStructure()
-
-
+       const frameworkSignals = repoMetrics.hasFramework()
+        const estimatedFramework = Object.entries(frameworkSignals ?? {}).sort(
+            ([, v1],[,v2]) => v2-v1)[0][0]
 
         // 4. deeper file discovery (nested)
 
-        // !TESTING_FILE_PATH &&
-        fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(easyChecksResult));
+        !TESTING_FILE_PATH && fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(easyChecksResult));
 
         return c.json({
             success: true,
@@ -80,7 +79,9 @@ router.post("", async (c) => {
                     codeLines: linesPerCodeFile,
                     typeLines: linePerFileType,
                     avgPerFileType,
-                    medianPerFileType
+                    medianPerFileType,
+                    frameworkSignals,
+                    estimatedFramework,
                 },
             }
         })
