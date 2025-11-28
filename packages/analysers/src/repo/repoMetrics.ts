@@ -48,9 +48,9 @@ class RepoMetrics {
     private maxDepth = 0
     private fileTypes: Record<string, number> | null = {};
 
-    constructor(private jobPath: string, private pkg: PackageJson) {}
+    constructor(private jobPath: string, private pkg: PackageJson | null) {}
 
-     static init = async (jobPath: string, pkg: PackageJson) => {
+     static init = async (jobPath: string, pkg: PackageJson | null) => {
         const analyzer = new RepoMetrics(jobPath, pkg);
         analyzer.files = await analyzer.readFiles(jobPath, 0);
         analyzer.fileTypes = analyzer.collectFileTypes();
@@ -241,13 +241,17 @@ class RepoMetrics {
         );
     };
 
-
     checkStructure = (): Record<string, boolean> | null => {
         if (!this.files) {
             return null;
         }
+        let src: string[] = []
+        try {
+            src = fs.readdirSync(`${this.jobPath}/src`);
+        } catch (e) {
+            console.error("No SRC")
+        }
 
-        const src = fs.readdirSync(`${this.jobPath}/src`);
         const srcLower = src.map((name) => name.toLowerCase());
 
         const srcStructure: Record<string, boolean> = {}

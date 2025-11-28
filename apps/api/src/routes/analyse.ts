@@ -8,14 +8,15 @@ import RepoRootAnalyser from "../../../../packages/analysers/src/repo/repoRootAn
 import PackageJsonAnalyser from "../../../../packages/analysers/src/repo/packageJsonAnalyser.js";
 import packageJsonAnalyser from "../../../../packages/analysers/src/repo/packageJsonAnalyser.js";
 import RepoMetrics from "../../../../packages/analysers/src/repo/repoMetrics.js";
-import ProjectAnalysis from "../../../../packages/analysers/src/repo/projectAnalysis.js";
+import FrameworkAnalyser from "../../../../packages/analysers/src/repo/frameworkAnalyser.js";
 
 const router = new Hono();
 
 const BASE_PATH = '/tmp/folio-scout'
 
 // TODO: use new repo job here
-const TESTING_FILE_PATH = 'job_f72303da-2df1-4674-84cc-6ed566745851'
+const TESTING_FILE_PATH = ''
+    // 'job_f72303da-2df1-4674-84cc-6ed566745851'
 
 router.post("", async (c) => {
     const body = await c.req.json()
@@ -35,19 +36,33 @@ router.post("", async (c) => {
 
         // TODO: if no repo supplied reject request
         // clone repo into jobs/{job_id}
-        // await simpleGit().clone(body.repoUrl, jobPath)
+        await simpleGit().clone(body.repoUrl, jobPath)
 
         // 1. easy root level checks
         const easyRepoChecks = new RepoRootAnalyser(jobPath);
         const easyChecksResult = easyRepoChecks.runRepoChecks() || {};
 
-        // TODO
         // 2. package.json analysis
         const packageJsonChecks = new PackageJsonAnalyser(jobPath);
         const pkg = packageJsonChecks.getPackageJson();
         const packageJsonResult = packageJsonChecks.runPackageJsonChecks() || {};
 
-        // 3. repo metrics (counts, sizes, depth)
+        // 3. get the framework used in the repo
+        const projectAnalysis = new FrameworkAnalyser(pkg);
+        const frameworkSignals = projectAnalysis.hasFramework()
+        const estimatedFramework = projectAnalysis.estimateFramework();
+
+        let frameworkVersion = null;
+        let metaFrameworkVersion = null;
+        if (estimatedFramework.frameworkCandidate) {
+            frameworkVersion = projectAnalysis.getFrameworkVersion();
+        }
+
+        if (estimatedFramework.metaFrameworkCandidate) {
+            metaFrameworkVersion = projectAnalysis.getMetaFrameworkVersion();
+        }
+
+        // 4. repo metrics (counts, sizes, depth)
         const repoMetrics = await RepoMetrics.init(jobPath, pkg);
         const filesInRepo = repoMetrics.getFileTypes() || {};
         const numFiles = repoMetrics.getNumTotalFiles()
@@ -57,38 +72,44 @@ router.post("", async (c) => {
         const linePerFileType = RepoMetrics.getLinesPerFileType(linesPerCodeFile || {});
         const avgPerFileType = RepoMetrics.getAvgLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
         const medianPerFileType = RepoMetrics.getMedianLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
-        const srcStructure = repoMetrics.checkStructure()
 
-        const projectAnalysis = new ProjectAnalysis()
-        const frameworkSignals = projectAnalysis.hasFramework(pkg)
-        const estimatedFramework = projectAnalysis.estimatedFramework(frameworkSignals);
+        //TODO: if no src then dont do the below!
+        let srcStructure: Record<string, boolean> | null = null;
+
+        if (easyChecksResult.hasRootSrc) {
+            srcStructure = repoMetrics.checkStructure();
+        }
 
         // 4. deeper file discovery (nested)
+        // TODO: given the framework (and version) are there any structural outliers - app router vs pages/
 
-        !TESTING_FILE_PATH && fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(easyChecksResult));
 
-        return c.json({
-            success: true,
-            data: {
-                easyChecksResult,
-                packageJsonResult,
-                srcStructure,
-                files: {
-                    maxDepth: maxDepth,
-                    numFiles: numFiles,
-                    numCodeFiles: numCodeFiles,
-                    types: filesInRepo,
-                    codeLines: linesPerCodeFile,
-                    typeLines: linePerFileType,
-                    avgPerFileType,
-                    medianPerFileType,
-                    frameworks: {
-                        signals: frameworkSignals,
-                        estimatedFramework,
-                    }
-                },
-            }
-        })
+        const data = {
+            easyChecksResult,
+            packageJsonResult,
+            srcStructure,
+            files: {
+                maxDepth: maxDepth,
+                numFiles: numFiles,
+                numCodeFiles: numCodeFiles,
+                types: filesInRepo,
+                codeLines: linesPerCodeFile,
+                typeLines: linePerFileType,
+                avgPerFileType,
+                medianPerFileType,
+                frameworks: {
+                    signals: frameworkSignals,
+                    estimatedFramework,
+                    frameworkVersion,
+                    metaFrameworkVersion,
+                }
+            },
+        }
+
+        // !TESTING_FILE_PATH &&
+        // fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(data));
+
+        return c.json({ success: true, data})
     } catch (e) {
         console.error("FS ERROR:", e);
         throw new HTTPException(500);
