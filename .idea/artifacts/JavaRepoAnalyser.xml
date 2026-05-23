@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="JavaRepoAnalyser">
+    <output-path>$PROJECT_DIR$/out/artifacts/JavaRepoAnalyser</output-path>
+    <root id="archive" name="JavaRepoAnalyser.jar">
+      <element id="module-output" name="folio-scout" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/packages/analysers/JavaRepoAnalyser/lib/jackson-databind-2.21.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/packages/analysers/JavaRepoAnalyser/lib/jackson-core-2.21.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/packages/analysers/JavaRepoAnalyser/lib/jackson-annotations-2.21.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

@@ -9,6 +9,10 @@ import PackageJsonAnalyser from "../../../../packages/analysers/src/repo/package
 import packageJsonAnalyser from "../../../../packages/analysers/src/repo/packageJsonAnalyser.js";
 import RepoMetrics from "../../../../packages/analysers/src/repo/repoMetrics.js";
 import FrameworkAnalyser from "../../../../packages/analysers/src/repo/frameworkAnalyser.js";
+import * as child_process from "node:child_process";
+import {exec, spawn} from "node:child_process";
+import {promisify} from "node:util";
+import path from "node:path"
 
 const router = new Hono();
 
@@ -17,6 +21,9 @@ const BASE_PATH = '/tmp/folio-scout'
 // TODO: use new repo job here
 const TESTING_FILE_PATH = ''
     // 'job_f72303da-2df1-4674-84cc-6ed566745851'
+
+const execAsync = promisify(exec)
+
 
 router.post("", async (c) => {
     const body = await c.req.json()
@@ -38,9 +45,19 @@ router.post("", async (c) => {
         // clone repo into jobs/{job_id}
         await simpleGit().clone(body.repoUrl, jobPath)
 
+        const jarPath = path.resolve(process.cwd(), '../../out/artifacts/JavaRepoAnalyser/JavaRepoAnalyser.jar')
+        const command = `java -jar ${jarPath}`
+        const {stdout, stderr} = await execAsync(command);
+
+        const result = JSON.parse(stdout);
+
+        console.log('repo root analysis Java: ', result)
+
         // 1. easy root level checks
         const easyRepoChecks = new RepoRootAnalyser(jobPath);
+
         const easyChecksResult = easyRepoChecks.runRepoChecks() || {};
+        console.log('repo root analysis JS: ', easyChecksResult)
 
         // 2. package.json analysis
         const packageJsonChecks = new PackageJsonAnalyser(jobPath);

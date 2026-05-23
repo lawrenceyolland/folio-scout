@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="jackson-annotations-2.21">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/packages/analysers/JavaRepoAnalyser/lib/jackson-annotations-2.21.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

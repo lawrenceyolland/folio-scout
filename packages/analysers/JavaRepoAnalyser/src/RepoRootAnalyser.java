@@ -1,3 +1,6 @@
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,8 +80,14 @@ public class RepoRootAnalyser {
                 FileNames.add(file.getName());
             }
             RepoStructure result = analyse();
-            System.out.println(result);
-        }
 
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                String json = mapper.writeValueAsString(result);
+                System.out.println(json);
+            } catch (Exception e) {
+                System.err.println("JSON Error: " + e.getMessage());
+            }
+        }
     }
 }
