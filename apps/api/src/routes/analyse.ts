@@ -48,14 +48,13 @@ router.post("", async (c) => {
         const jarPath = path.resolve(process.cwd(), '../../out/artifacts/JavaRepoAnalyser/JavaRepoAnalyser.jar')
         const command = `java -jar ${jarPath}`
         const {stdout, stderr} = await execAsync(command);
+        // TODO: if stderr throw or return error response here
 
         const result = JSON.parse(stdout);
-
         console.log('repo root analysis Java: ', result)
 
         // 1. easy root level checks
         const easyRepoChecks = new RepoRootAnalyser(jobPath);
-
         const easyChecksResult = easyRepoChecks.runRepoChecks() || {};
         console.log('repo root analysis JS: ', easyChecksResult)
 

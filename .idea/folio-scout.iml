@@ -3,7 +3,7 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/packages/analysers/JavaRepoAnalyser/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/analysers/JavaRepoAnalyser/src/main/java" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
@@ -13,5 +13,7 @@
     <orderEntry type="library" name="jackson-annotations-2.21" level="project" />
     <orderEntry type="library" name="jackson-core-2.21.3" level="project" />
     <orderEntry type="library" name="jackson-databind-2.21.3" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.17.0" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.17.0" level="project" />
   </component>
 </module>
