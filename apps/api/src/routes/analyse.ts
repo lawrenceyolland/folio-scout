@@ -135,7 +135,7 @@ router.post("", async (c) => {
         // !TESTING_FILE_PATH &&
         // fs.writeFileSync(`${jobPath}/easy-check.json`, JSON.stringify(data));
 
-        return c.json({ success: true, data})
+        return c.json({ success: true, })
     } catch (e) {
         console.error("FS ERROR:", e);
         throw new HTTPException(500);
