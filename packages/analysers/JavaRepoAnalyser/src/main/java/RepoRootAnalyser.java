@@ -1,4 +1,4 @@
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8,7 +8,6 @@ import java.util.List;
 public class RepoRootAnalyser {
     private final File directory;
     private final List<String> fileNames = new ArrayList<>();
-
 
     private boolean hasFile(String fileName) {
         return fileNames.contains(fileName);
@@ -50,7 +49,7 @@ public class RepoRootAnalyser {
         return counter > 1;
     }
 
-    public RepoRootStructure analyse() {
+    public RepoRootRecord analyse() {
         File[] rootFiles = directory.listFiles();
 
         if (rootFiles != null) {
@@ -59,7 +58,7 @@ public class RepoRootAnalyser {
             }
         }
 
-        return new RepoRootStructure(
+        return new RepoRootRecord(
             hasFile("package.json"),
             hasFile("README.md"),
             hasFile("src"),

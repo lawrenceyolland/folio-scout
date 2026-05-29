@@ -33,7 +33,9 @@ router.post("", async (c) => {
     }
 
     const jobId = TESTING_FILE_PATH || `job_${c.get("requestId")}`
-    let files = []
+    let files = [];
+    let stdout;
+    let stderr;
     try {
         const jobPath = `${BASE_PATH}/jobs/${jobId}`
 
@@ -50,17 +52,17 @@ router.post("", async (c) => {
 
         const filePath = "/tmp/folio-scout/jobs/job_ec5844da-1d4a-4167-812d-8d8935d00d81";
 
-        const command = `java -jar ${jarPath} ${filePath}`
-        const {stdout, stderr} = await execAsync(command);
+        const command = `java -jar ${jarPath} ${filePath}`;
 
-        // TODO: if stderr throw or return error response here
+        ({ stdout, stderr } = await execAsync(command));
+
         if (stderr) {
-            throw new Error(`Error ${stderr}` )
+            return c.json({ success: false, error: stderr})
         }
 
-        const easyChecksResult = JSON.parse(stdout);
-        console.log('repo root analysis Java: ', easyChecksResult)
+        const repoAnalysis = JSON.parse(stdout);
 
+        // TODO: incrementally move the below to the java analyser
         // 1. easy root level checks
         // const easyRepoChecks = new RepoRootAnalyser(jobPath);
         // const easyChecksResult = easyRepoChecks.runRepoChecks() || {};
@@ -69,7 +71,7 @@ router.post("", async (c) => {
         // 2. package.json analysis
         const packageJsonChecks = new PackageJsonAnalyser(jobPath);
         const pkg = packageJsonChecks.getPackageJson();
-        const packageJsonResult = packageJsonChecks.runPackageJsonChecks() || {};
+        // const packageJsonResult = packageJsonChecks.runPackageJsonChecks() || {};
 
         // 3. get the framework used in the repo
         const projectAnalysis = new FrameworkAnalyser(pkg);
@@ -98,20 +100,20 @@ router.post("", async (c) => {
         const medianPerFileType = RepoMetrics.getMedianLinesPerFileType(linesPerCodeFile || {}, filesInRepo || {})
 
         //TODO: if no src then dont do the below!
-        let srcStructure: Record<string, boolean> | null = null;
-
-        if (easyChecksResult.hasRootSrc) {
-            srcStructure = repoMetrics.checkStructure();
-        }
+        // let srcStructure: Record<string, boolean> | null = null;
+        //
+        // if (easyChecksResult.hasRootSrc) {
+        //     srcStructure = repoMetrics.checkStructure();
+        // }
 
         // 4. deeper file discovery (nested)
         // TODO: given the framework (and version) are there any structural outliers - app router vs pages/
 
 
         const data = {
-            easyChecksResult,
-            packageJsonResult,
-            srcStructure,
+            // easyChecksResult, <- replaced
+            // packageJsonResult, <- replaced
+            // srcStructure, <- temporarily removed
             files: {
                 maxDepth: maxDepth,
                 numFiles: numFiles,

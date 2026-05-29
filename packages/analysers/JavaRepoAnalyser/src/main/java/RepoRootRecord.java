@@ -1,4 +1,6 @@
-public record RepoRootStructure(
+// TODO: currently returns boolean, will switch this to a more instructive object like:
+// boolean present | int (1-10) severity
+public record RepoRootRecord(
         boolean hasPackageJson,
         boolean hasReadMe,
         boolean hasRootSrc,
