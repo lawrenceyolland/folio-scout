@@ -45,18 +45,26 @@ router.post("", async (c) => {
         // clone repo into jobs/{job_id}
         await simpleGit().clone(body.repoUrl, jobPath)
 
-        const jarPath = path.resolve(process.cwd(), '../../out/artifacts/JavaRepoAnalyser/JavaRepoAnalyser.jar')
-        const command = `java -jar ${jarPath}`
-        const {stdout, stderr} = await execAsync(command);
-        // TODO: if stderr throw or return error response here
+        const jarPath = path.resolve(process.cwd(), '../../packages/analysers/JavaRepoAnalyser/target/JavaRepoAnalyser-1.0-jar-with-dependencies.jar')
+        console.log('jarPath: ', jarPath)
 
-        const result = JSON.parse(stdout);
-        console.log('repo root analysis Java: ', result)
+        const filePath = "/tmp/folio-scout/jobs/job_ec5844da-1d4a-4167-812d-8d8935d00d81";
+
+        const command = `java -jar ${jarPath} ${filePath}`
+        const {stdout, stderr} = await execAsync(command);
+
+        // TODO: if stderr throw or return error response here
+        if (stderr) {
+            throw new Error(`Error ${stderr}` )
+        }
+
+        const easyChecksResult = JSON.parse(stdout);
+        console.log('repo root analysis Java: ', easyChecksResult)
 
         // 1. easy root level checks
-        const easyRepoChecks = new RepoRootAnalyser(jobPath);
-        const easyChecksResult = easyRepoChecks.runRepoChecks() || {};
-        console.log('repo root analysis JS: ', easyChecksResult)
+        // const easyRepoChecks = new RepoRootAnalyser(jobPath);
+        // const easyChecksResult = easyRepoChecks.runRepoChecks() || {};
+        // console.log('repo root analysis JS: ', easyChecksResult)
 
         // 2. package.json analysis
         const packageJsonChecks = new PackageJsonAnalyser(jobPath);

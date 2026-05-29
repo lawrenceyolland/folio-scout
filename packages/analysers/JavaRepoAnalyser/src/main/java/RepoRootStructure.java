@@ -1,0 +1,20 @@
+public record RepoRootStructure(
+        boolean hasPackageJson,
+        boolean hasReadMe,
+        boolean hasRootSrc,
+        boolean hasGitIgnore,
+        boolean hasNodeModules,
+        boolean hasYarn,
+        boolean hasNpm,
+        boolean hasPNPM,
+        boolean hasMultipleLockFiles,
+        boolean hasEsLint,
+        boolean hasPrettier,
+        boolean hasTypeScript,
+        boolean hasAstro,
+        boolean hasNext,
+        boolean hasVite,
+        boolean hasWebPack,
+        boolean hasEnv,
+        boolean hasLockFile
+){};

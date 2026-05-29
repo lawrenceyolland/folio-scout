@@ -6,37 +6,19 @@ import java.util.List;
 
 
 public class RepoRootAnalyser {
-    String BASE_PATH = "/tmp/folio-scout/jobs/job_8819a277-7b08-4a88-9386-35814bcf8e81";
-    private final List<String> FileNames = new ArrayList<>();
+    private final File directory;
+    private final List<String> fileNames = new ArrayList<>();
 
-    public record RepoStructure(
-        boolean hasPackageJson,
-        boolean hasReadMe,
-        boolean hasRootSrc,
-        boolean hasGitIgnore,
-        boolean hasNodeModules,
-        boolean hasYarn,
-        boolean hasNpm,
-        boolean hasYarnAndNpm,
-        boolean hasEsLint,
-        boolean hasPrettier,
-        boolean hasTypeScrypt,
-        boolean hasAstro,
-        boolean hasNext,
-        boolean hasVite,
-        boolean hasWebPack
-    ){};
 
     private boolean hasFile(String fileName) {
-        return FileNames.contains(fileName);
+        return fileNames.contains(fileName);
     }
 
     private boolean hasConfig(String prefix) {
         List<String> extensions = List.of(".js", ".ts" , ".cjs", ".mjs");
 
-        return extensions.stream().anyMatch(ext -> FileNames.contains(prefix + ext));
+        return extensions.stream().anyMatch(ext -> fileNames.contains(prefix + ext));
     }
-
 
     private boolean hasAnyConfig(String... prefixes) {
         for (String prefix : prefixes) {
@@ -47,8 +29,37 @@ public class RepoRootAnalyser {
         return false;
     }
 
-    public RepoStructure analyse() {
-        return new RepoStructure(
+    private boolean hasAnyFile(String... files) {
+        for (String file : files) {
+            if (hasFile(file)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasMultipleFilesOfType(String... files) {
+        int counter = 0;
+
+        for (String file : files) {
+            if (hasFile(file)) {
+                counter += 1;
+            }
+        }
+
+        return counter > 1;
+    }
+
+    public RepoRootStructure analyse() {
+        File[] rootFiles = directory.listFiles();
+
+        if (rootFiles != null) {
+            for (File file : rootFiles) {
+                this.fileNames.add(file.getName());
+            }
+        }
+
+        return new RepoRootStructure(
             hasFile("package.json"),
             hasFile("README.md"),
             hasFile("src"),
@@ -56,37 +67,24 @@ public class RepoRootAnalyser {
             hasFile("node_modules"),
             hasFile("yarn.lock"),
             hasFile("package-lock.json"),
-                hasFile("yarn.lock") && hasFile("package-lock.json"),
+                hasFile("pnpm-lock.yaml"),
+                hasMultipleFilesOfType("yarn.lock", "package-lock.json", "pnpm-lock.yaml"),
                 hasAnyConfig("eslint.config", ".eslintrc"),
                 hasConfig(".prettierrc"),
                 hasConfig("tsconfig"),
                 hasConfig("astro"),
                 hasConfig("next.config"),
                 hasConfig("vite.config"),
-                hasConfig("webpack.config")
+                hasConfig("webpack.config"),
+                hasFile(".env"),
+                hasAnyFile("yarn.lock", "package-lock.json")
         );
     }
 
-
-
-    public RepoRootAnalyser() {
-        File directory = new File(BASE_PATH);
-        // check directory exists here= directory.exists()
-        File[] rootFiles = directory.listFiles();
-
-        if (rootFiles != null){
-            for (File file : rootFiles) {
-                FileNames.add(file.getName());
-            }
-            RepoStructure result = analyse();
-
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                String json = mapper.writeValueAsString(result);
-                System.out.println(json);
-            } catch (Exception e) {
-                System.err.println("JSON Error: " + e.getMessage());
-            }
+    public RepoRootAnalyser(String filePath) {
+        this.directory = new File(filePath);
+        if (!directory.exists() || !directory.isDirectory()){
+            throw new IllegalArgumentException("Repository root does not exist");
         }
     }
 }
